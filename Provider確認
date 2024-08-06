@@ -1,0 +1,4 @@
+(New-Object data.oledb.oledbenumerator).getElements() | select SOURCES_NAME, SOURCES_DESCRIPTION
+
+Access 2007        Microsoft.ACE.OLEDB.12.0;
+Access 2003以前    Microsoft.Jet.OLEDB.4.0;
