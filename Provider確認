@@ -1,4 +1,11 @@
 (New-Object data.oledb.oledbenumerator).getElements() | select SOURCES_NAME, SOURCES_DESCRIPTION
 
-Access 2007        Microsoft.ACE.OLEDB.12.0;
-Access 2003以前    Microsoft.Jet.OLEDB.4.0;
+Access 2007			Microsoft.ACE.OLEDB.12.0;
+Access 2003以前		Microsoft.Jet.OLEDB.4.0;
+Oracle				MSDAORA;
+SQLServer			SQLOLEDB;
+DB2					IBMDADB2;
+ODBC 接続			MSDASQL;
+Excel 2007			Microsoft.ACE.OLEDB.12.0;
+Excel 2003以前		Microsoft.Jet.OLEDB.4.0;
+CSV ファイル		Microsoft.Jet.OLEDB.4.0;
