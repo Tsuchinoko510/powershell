@@ -1,0 +1,36 @@
+class TestClass22{
+           [int] $Data      # 通常の内部データ
+    static [int] $stData    # static な内部データ
+
+    # 通常変数へのの Add メソッド
+    [int] Add ( [int] $Indata ){
+        $this.Data += $Indata
+        return $this.Data
+    }
+
+    # static 変数への Add メソッド
+    [int] StaticAdd ( [int] $Indata ){
+        [TestClass22]::stData += $Indata
+        return [TestClass22]::stData
+    }
+}
+
+echo "インスタンス化"
+$TestObjectA = New-Object TestClass22
+
+echo "通常内部データを操作するメソッド実行(10)"
+$TestObjectA.Add(10)
+
+echo "static な内部データを操作するメソッド実行(15)"
+$TestObjectA.StaticAdd(15)
+
+echo ""
+
+echo "もう一つインスタンス化"
+$TestObjectB = New-Object TestClass22
+
+echo "通常内部データを操作するメソッド実行(10)"
+$TestObjectB.Add(10)
+
+echo "static な内部データを操作するメソッド実行(15)"
+$TestObjectB.StaticAdd(15)
