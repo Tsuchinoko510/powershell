@@ -1,0 +1,105 @@
+$settings = @{
+    "odbc_name"  = "DB2"
+    "conn_user"  = "USR1"
+    "conn_pass"  = "PASS1"
+    "table_name" = "TABLE1"
+}
+
+##########################################################################
+# 対象テーブルから主キーを抽出する
+##########################################################################
+$query = @"
+connect to $($settings.odbc_name) user $($settings.conn_user) using $($settings.conn_pass);
+
+export to temporary_p_keys.csv of del
+select colname from syscat.keycoluse where tabname = '$($settings.table_name)'
+order by colseq;
+"@
+
+$query | Out-File -Encoding default temporary.sql
+db2cmd /c /w /i db2 -tvf temporary.sql | Out-Null
+if($? -eq $False) {
+    Write-Host -ForegroundColor Red "ERROR: DB2へのクエリ発行に失敗しました。"
+    Write-Host ""
+    Write-Host "接続情報 :"
+    Write-Host "ODBC : $($settings.odbc_name)   USER : $($settings.conn_user)   PASSWORD : $($settings.conn_pass)"
+    Write-Host ""
+    Write-Host "発行クエリ :"
+    Write-Host $query
+    read-host "エラー内容を確認してください。[Enter]キーで終了"
+    exit -1
+}
+
+
+# 抽出した主キーをCSVから読み込んでarraylist化する
+# arraylist化した主キーはorder by句で使用する
+$p_keys = import-csv temporary_p_keys.csv -Header "COLNAME"
+$order_keys = New-Object System.Collections.ArrayList
+foreach ($p in $p_keys) { $order_keys.add($p.COLNAME) | out-null }
+
+##########################################################################
+# 対象テーブルから列を抽出する
+##########################################################################
+$query = @"
+connect to $($settings.odbc_name) user $($settings.conn_user) using $($settings.conn_pass);
+
+export to temporary_columns.csv of del
+select colname
+from syscat.columns
+where tabschema=(select current_schema from dual)
+and tabname = '$($settings.table_name)'
+order by colno
+;
+"@
+
+$query | Out-File -Encoding default temporary.sql
+db2cmd /c /w /i db2 -tvf temporary.sql | Out-Null
+if($? -eq $False) {
+    Write-Host -ForegroundColor Red "ERROR: DB2へのクエリ発行に失敗しました。"
+    Write-Host ""
+    Write-Host "接続情報 :"
+    Write-Host "ODBC : $($settings.odbc_name)   USER : $($settings.conn_user)   PASSWORD : $($settings.conn_pass)"
+    Write-Host ""
+    Write-Host "発行クエリ :"
+    Write-Host $query
+    read-host "エラー内容を確認してください。[Enter]キーで終了"
+    exit -1
+}
+
+# 抽出した列をCSVから読み込んでarraylist化する
+# dump.csvのヘッダー行として使用する
+$cols = import-csv temporary_columns.csv -Header "COLNAME" -Encoding Default
+$headers = New-Object System.Collections.ArrayList
+foreach ($c in $cols) { $headers.add($c.COLNAME) | out-null }
+
+##########################################################################
+# 対象テーブルをCSV化する
+##########################################################################
+$query = @"
+connect to $($settings.odbc_name) user $($settings.conn_user) using $($settings.conn_pass);
+
+export to temporary_body.csv of DEL
+select * from $($settings.table_name)
+order by $($order_keys -join ",")
+;
+"@
+
+$query | Out-File -Encoding default temporary.sql
+db2cmd /c /w /i db2 -tvf temporary.sql | Out-Null
+if($? -eq $False) {
+    Write-Host -ForegroundColor Red "ERROR: DB2へのクエリ発行に失敗しました。"
+    Write-Host ""
+    Write-Host "接続情報 :"
+    Write-Host "ODBC : $($settings.odbc_name)   USER : $($settings.conn_user)   PASSWORD : $($settings.conn_pass)"
+    Write-Host ""
+    Write-Host "発行クエリ :"
+    Write-Host $query
+    read-host "エラー内容を確認してください。[Enter]キーで終了"
+    exit -1
+}
+
+# 最終的なCSVファイルを作成する
+$headers -join "," | Out-File -Encoding default "$($settings.table_name)_dump.csv"
+Get-Content "temporary_body.csv" | Out-File -Encoding default -Append "$($settings.table_name)_dump.csv"
+
+Remove-Item temporary*
