@@ -1,0 +1,113 @@
+# ■ACCESSファイル名
+$dbName = "MAIN.accdb"
+
+# ■出力ファイル名
+$outputName = "【申告書B】令和５年度.csv"
+
+# I/Oのパス取得
+$exportPath = ((Convert-Path .\), $outputName -join '\');
+$dbPath = ((Convert-Path .\), $dbName -join '\');
+
+# ACCESS接続の定型文
+$connectionString = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=$dbPath;";
+$connection = New-Object System.Data.OleDb.OleDbConnection($connectionString);
+
+# ■値がない場合のダミーデータ
+$dummy_KOB240 = "^" * 315;
+$dummy_KOB245 = "^" * 315;
+$dummy_KOB975 = "^" * 112;
+
+
+# ■DB調査
+#{テーブル名}
+$T_DB調査 = "[DB調査]";
+
+#{カラム名}
+$col_受付番号 = "[受付番号]";
+$col_利用者識別番号 = "[利用者識別番号]";
+$col_代表局署番号 = "[代表局署番号]";
+$col_代表整理番号 = "[代表整理番号]";
+$col_年分 = "[年分]";
+$col_申請区分 = "[申請区分]";
+$col_KSK連絡 = "[KSK連絡]";
+
+# ■KOA010 or KOA020
+$T_KOA = "[T_KOA020_ver21]";#{テーブル名}
+$col_KOA = "[KOA020]";#{カラム名}
+$display_KOA = "KOA020";#{表示名}
+
+# ■KOB240
+$T_KOB240 = "[T_KOB240_ver14]";#{テーブル名}
+$col_KOB240 = "[KOB240]";#{カラム名}
+
+# ■KOB245
+$T_KOB245 = "[T_KOB245_ver5]";#{テーブル名}
+$col_KOB245 = "[KOB245]";#{カラム名}
+
+# ■KOB975
+$T_KOB975 = "[T_KOB975_ver2]";#{テーブル名}
+$col_KOB975 = "[KOB975]";#{カラム名}
+
+# ACCESSに対して流すSQL文
+$query =
+"SELECT
+    ${T_DB調査}.${col_受付番号} AS 受付番号_1,
+    ${T_DB調査}.${col_利用者識別番号} AS 利用者識別番号,
+    ${T_DB調査}.${col_代表局署番号} AS 代表局署番号,
+    ${T_DB調査}.${col_代表整理番号} AS 代表整理番号,
+    ${T_DB調査}.${col_年分} AS 年分,
+    ${T_DB調査}.${col_申請区分} AS 申請区分,
+    ${T_DB調査}.${col_受付番号} AS 受付番号,
+    ${T_DB調査}.${col_KSK連絡} AS KSK連絡,
+    ${T_KOA}.${col_KOA} AS ${display_KOA},
+    SWITCH(${T_KOB240}.${col_KOB240} IS NOT NULL, ${T_KOB240}.${col_KOB240}, TRUE, '${dummy_KOB240}') AS KOB240,
+    SWITCH(${T_KOB245}.${col_KOB245} IS NOT NULL, ${T_KOB245}.${col_KOB245}, TRUE, '${dummy_KOB245}') AS KOB245,
+    SWITCH(${T_KOB975}.${col_KOB975} IS NOT NULL, ${T_KOB975}.${col_KOB975}, TRUE, '${dummy_KOB975}') AS KOB975
+FROM
+    (((
+    ${T_DB調査}
+    INNER JOIN ${T_KOA} ON ${T_DB調査}.${col_受付番号} = LEFT(${T_KOA}.${col_KOA}, 20))
+    LEFT JOIN ${T_KOB240} ON ${T_DB調査}.${col_受付番号} = LEFT(${T_KOB240}.${col_KOB240}, 20))
+    LEFT JOIN ${T_KOB245} ON ${T_DB調査}.${col_受付番号} = LEFT(${T_KOB245}.${col_KOB245}, 20))
+    LEFT JOIN ${T_KOB975} ON ${T_DB調査}.${col_受付番号} = LEFT(${T_KOB975}.${col_KOB975}, 20)
+WHERE ${T_KOB240}.${col_KOB240} IS NOT NULL
+	OR ${T_KOB245}.${col_KOB245} IS NOT NULL
+	OR ${T_KOB975}.${col_KOB975} IS NOT NULL";
+
+#SQL文のセット
+$command = New-Object System.Data.OleDb.OleDbCommand($query, $connection);
+
+#ACCESSを開く
+$connection.Open();
+
+#SQLの結果取得
+$reader = $command.ExecuteReader();
+
+#SQLの結果を配列化
+$table = @();
+$columnNames = $reader.GetSchemaTable() | Select -Expand ColumnName;
+
+while ($reader.Read()) {
+    $row = New-Object PSObject;
+    foreach ($columnName in $columnNames) {
+        $row | Add-Member -MemberType NoteProperty -Name $columnName -Value $reader[$columnName];
+    }
+    $table += $row;
+}
+
+#配列をWindow表示
+#$table | Format-Table -AutoSize;
+
+#配列をファイル出力
+$table|Export-Csv -Path $exportPath -Encoding UTF8 -Delimiter '^' -NoTypeInformation;
+
+#出力されたファイルの区切り文字(^)前後の「"」を削除
+$csv = Get-Content $exportPath;
+$csv.Replace('"^"','^').TrimStart('"').TrimEnd('"') | Out-File $exportPath -Force -Confirm:$false;
+
+#ACCESSを閉じる
+$connection.Close();
+Write-host "完了";
+
+#エラー表示に備えて10秒待機
+Start-Sleep 10;
