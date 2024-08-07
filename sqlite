@@ -1,0 +1,76 @@
+#
+# SQLiteでDBの作成、テーブルの作成、追加、更新、削除するサンプル
+#
+
+# C:\Program Files\WindowsPowerShell\Modules
+
+using namespace System.Data.SQLite
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "STOP"
+
+# モジュールのインポート
+Import-Module SQLite
+
+# データベースファイル
+$db_path = "E:\ps1\sqlite\sample.db"
+
+# コネクションオブジェクトの生成
+$con = [SQLiteConnection]::new() | % {
+    $_.ConnectionString = ("Data Source = {0}"-f $db_path)
+    $_.Open()
+    $_
+}
+
+# テーブル作成
+$cmd = [SQLiteCommand]::new()
+$cmd.Connection = $con
+$cmd.CommandText = @"
+CREATE TABLE IF NOT EXISTS sample (
+    id int,
+    name text,
+    primary key(id)
+)
+"@
+$cmd.ExecuteNonQuery() | Out-Null
+
+# レコードの追加
+$cmd.CommandText = @"
+INSERT INTO sample (id, name) values (1,'hanako')
+"@
+$cmd.ExecuteNonQuery() | Out-Null
+
+$cmd.CommandText = @"
+INSERT INTO sample (id, name) values (2,'taro')
+"@
+$cmd.ExecuteNonQuery() | Out-Null
+
+# レコードの更新
+$cmd.CommandText = @"
+UPDATE sample SET name = 'jiro' WHERE id = 2
+"@
+$cmd.ExecuteNonQuery() | Out-Null
+
+# レコードの削除
+$cmd.CommandText = @"
+DELETE FROM sample WHERE id = 1
+"@
+$cmd.ExecuteNonQuery() | Out-Null
+
+# レコードの参照
+$cmd.CommandText = @"
+SELECT id, name FROM sample
+"@
+$rec = $cmd.ExecuteReader()
+while ($rec.Read()) {
+    Write-Host ("id:{0} name:{1}" -f $rec['id'], $rec['name'])
+}
+$rec.Close()
+
+# テーブルの削除
+$cmd.CommandText = @"
+DROP TABLE IF EXISTS sample;
+"@
+$cmd.ExecuteNonQuery() | Out-Null
+
+$con.Close()
