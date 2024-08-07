@@ -1,0 +1,18 @@
+class SampleData
+{
+    [int]$id;
+    [string]$name;
+
+    SampleData([int]$inId, [string]$inName)
+    {
+       $this.id = $inId;
+       $this.name = $inName;
+    }
+}
+
+$sample1 = New-Object SampleData(1, 'sample1');
+$sample2 = New-Object SampleData(2, 'sample2');
+
+$sample1.name;
+
+#「sample1」
