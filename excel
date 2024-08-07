@@ -1,0 +1,158 @@
+try {
+    # Excelファイルの保存先
+    $filename = "チェックリスト.xlsx"
+    $csvname = "checklist.csv"
+
+    # 保護パスワード
+    $password = "password"
+
+    # ----- Do not change
+    # このファイルのディレクトリを取得
+    $path = [System.IO.Path]::GetDirectoryName($MyInvocation.MyCommand.Path)
+    $filepath = $path + "\" + $filename
+    $csvpath = $path + "\" + $csvname
+
+    if (!(Test-Path -Path $csvpath)) {
+        Throw "項目設定用CSVファイルなし"
+    }
+
+    # Excelの作成
+    try {
+        $excel = New-Object -ComObject Excel.Application
+
+        # 表示しない
+        $excel.Visible = $False
+
+        # アラートを非表示
+        $excel.DisplayAlerts = $False
+
+        # ブックを作成
+        $book = $excel.Workbooks.Add()
+
+        # シートを取得
+        $sheet = $excel.Worksheets.Item(1)
+
+        # 開いたシートの目盛線のチェックを外す(目盛線非表示に)
+        $excel.ActiveWindow.DisplayGridlines = $False
+
+        # シート名を指定
+        $sheet.Name = "チェックリスト"
+
+        # 印刷設定
+        $sheet.PageSetup.PrintArea = "A1:F19"
+        $sheet.PageSetup.Zoom = $False
+        $sheet.PageSetup.FitToPagesWide = 1
+        $sheet.PageSetup.FitToPagesTall = 1
+        $sheet.PageSetup.CenterHorizontally = $True
+
+        # シートの中身の作成
+        ## フォントを指定
+        $sheet.Range("B:E").Font.Name = "Meiryo UI"
+        ## 列の幅を指定
+        $sheet.Columns("C").ColumnWidth = 50
+        $sheet.Columns("E").ColumnWidth = 14.75
+
+        ## タイトル部分
+        $sheet.Range("B2:E2").MergeCells = $True
+        $sheet.Cells.Item(2, 2).Value = "チェックリスト"
+        $sheet.Cells.Item(2, 2).Font.Size = 16
+        $sheet.Cells.Item(2, 2).Font.Bold = $True
+        $sheet.Cells.Item(2, 2).HorizontalAlignment = -4108
+
+        ## 氏名・更新日部分
+        $sheet.Range("D4:E5").Borders.LineStyle = 1
+        $sheet.Range("D4:E5").Borders.Weight = 2
+
+        ### 氏名
+        $sheet.Cells.Item(4, 4).Value = "氏名"
+        $sheet.Cells.Item(4, 5).Locked = $False
+
+        ### 更新日
+        $sheet.Cells.Item(5, 4).Value = "更新日"
+        $sheet.Cells.Item(5, 5).Formula = "=TODAY()"
+        $sheet.Cells.Item(5, 5).NumberFormat = "yyyy年m月d日"
+
+        ## 項目部分
+        $sheet.Range("B7:E16").Borders.LineStyle = 1
+        $sheet.Range("B7:E16").Borders.Weight = 2
+        [Void]$sheet.Range("B7:E16").BorderAround(1, -4138)
+        $sheet.Range("B7:E7").Interior.Color = "&HD9D9D9"
+        $sheet.Range("B7:E7").HorizontalAlignment = -4108
+        $sheet.Range("C7:D7").MergeCells = $True
+        $sheet.Cells.Item(7, 2).Value = "No"
+        $sheet.Cells.Item(7, 3).Value = "項目"
+        $sheet.Cells.Item(7, 5).Value = "確認日"
+
+        ### 項目の値部分
+        for ($i = 8; $i -le 16; $i++) {
+            $sheet.Range("C${i}:D${i}").MergeCells = $True
+            $sheet.Range("C${i}:D${i}").WrapText = $True
+            $sheet.Cells.Item($i, 5).NumberFormat = "yyyy年m月d日"
+            $sheet.Cells.Item($i, 5).Locked = $False
+        }
+
+        ## 結果記入欄
+        $sheet.Range("D18:E18").Borders.LineStyle = 1
+        $sheet.Range("D18:E18").Borders.Weight = 2
+        $sheet.Range("D18:E18").Interior.Color = [System.Drawing.Color]::FromArgb(255, 204, 255)
+        $sheet.Cells.Item(18, 4).Value = "結果"
+        [Void]$sheet.Cells.Item(18, 5).Validation.Delete()
+        [Void]$sheet.Cells.Item(18, 5).Validation.Add(3, 1, 1, "合格,不合格,保留")
+        $sheet.Cells.Item(18, 5).Locked = $False
+
+        ## チェックリスト項目をCSVから作成
+        $csv = Import-Csv -Path $csvpath -Encoding UTF8 -Header "list"
+        for ($i = 0; $i -lt $csv.Length; $i++) {
+            $row = $i + 8
+            $sheet.Cells.Item($row, 2).Value = $i + 1
+            $sheet.Cells.Item($row, 3).Value = [String]$csv[$i].list
+            # 高さを取得・変更するために一度結合を解除
+            $sheet.Range("C${row}:D${row}").MergeCells = $False
+            # 項目列の高さに行の高さを合わせる
+            $sheet.Rows($row).RowHeight = [Double]$sheet.Cells.Item($row, 3).RowHeight
+            # セルを再結合
+            $sheet.Range("C${row}:D${row}").MergeCells = $True
+        }
+
+        # シートを保護
+        $sheet.Protect($password)
+
+        # ファイルを保存
+        $book.SaveAs($filepath, 51)
+
+    } catch {
+        Write-Error $_.toString()
+    } finally {
+        # プロセスを閉じて、ガベージコレクト
+        if ($sheet) {
+            [System.Runtime.InteropServices.Marshal]::ReleaseComObject($sheet) | Out-Null
+            $sheet = $null
+            Remove-Variable sheet -ErrorAction SilentlyContinue
+        }
+        if ($book) {
+            [System.Runtime.InteropServices.Marshal]::ReleaseComObject($book) | Out-Null
+            $book = $null
+            Remove-Variable book -ErrorAction SilentlyContinue
+        }
+
+        [System.GC]::Collect()
+        [System.GC]::WaitForPendingFinalizers()
+        [System.GC]::Collect()
+
+        if ($excel) {
+            $excel.Quit()
+
+            [System.Runtime.InteropServices.Marshal]::ReleaseComObject($excel) | Out-Null
+            $excel = $null
+            Remove-Variable -Name excel -ErrorAction SilentlyContinue
+
+            [System.GC]::Collect()
+            [System.GC]::WaitForPendingFinalizers()
+            [System.GC]::Collect()
+        }
+
+    }
+} catch {
+    Write-Error $_.toString()
+    Exit
+}
