@@ -1,0 +1,46 @@
+<#
+.SYNOPSIS
+ Oracleデータベース接続する。
+.DESCRIPTION
+ サンプルスクリプト
+#>
+
+using namespace System.Data.OracleClient
+
+# アセンブリのロード
+Add-Type -AssemblyName System.Data.OracleClient
+
+# 接続文字列
+$User = "ユーザーID"
+$Pass = "パスワード"
+$DataSource = "データソース"
+$ConnectionString = "Data Source=${DataSource};User ID=${User};Password=${Pass};Integrated Security=false;"
+
+# 接続
+$Connection = [OracleConnection]::new($ConnectionString)
+$Connection.Open()
+
+# SQL
+$sqlString = "SELECT KBN FROM AAA"
+
+# コマンドオブジェクトを生成
+$Command = [OracleCommand]::new() | % {
+    $_.Connection = $Connection
+    $_.CommandText = $sqlString
+    $_
+}
+
+# SQLの結果を読み込み
+$Reader = $Command.ExecuteReader()
+
+while($Reader.Read())
+{
+    Write-Host $Reader['KBN']
+}
+
+$Reader.Dispose()
+
+$Command.Dispose()
+
+# 切断
+$Connection.Dispose()
