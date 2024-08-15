@@ -1,12 +1,26 @@
+# [log]
+$logFileName = "レコード取得_【申告書B】令和５年分_01~06.ps1";
+Start-Transcript ((Convert-Path .\), "${logFileName}.log" -join '\');
+
 # ■ACCESSファイル名
 $dbName = "MAIN.accdb"
 
 # ■出力ファイル名
-$outputName = "【申告書B】令和５年度.csv"
+$outputName = "06_【申告書B】令和５年度01~06.csv"
 
 # I/Oのパス取得
 $exportPath = ((Convert-Path .\), $outputName -join '\');
 $dbPath = ((Convert-Path .\), $dbName -join '\');
+
+# [log]
+write-host ""
+Write-Host "-> 【OUTPUT】"
+Write-Host "${exportPath}"
+write-host ""
+write-host ""
+write-host "-> 【INPUT】"
+write-host "${dbPath}"
+write-host ""
 
 # ACCESS接続の定型文
 $connectionString = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=$dbPath;";
@@ -20,15 +34,15 @@ $dummy_KOB975 = "^" * 112;
 
 # ■DB調査
 #{テーブル名}
-$T_DB調査 = "[DB調査]";
+$T_DB調査 = "[T_DB調査_2023_01~06]";
 
 #{カラム名}
 $col_受付番号 = "[受付番号]";
 $col_利用者識別番号 = "[利用者識別番号]";
 $col_代表局署番号 = "[代表局署番号]";
 $col_代表整理番号 = "[代表整理番号]";
-$col_年分 = "[年分]";
-$col_申請区分 = "[申請区分]";
+$col_年分 = "[年分等]";
+$col_申請区分 = "[申告区分]";
 $col_KSK連絡 = "[KSK連絡]";
 
 # ■KOA010 or KOA020
@@ -51,7 +65,6 @@ $col_KOB975 = "[KOB975]";#{カラム名}
 # ACCESSに対して流すSQL文
 $query =
 "SELECT
-    ${T_DB調査}.${col_受付番号} AS 受付番号_1,
     ${T_DB調査}.${col_利用者識別番号} AS 利用者識別番号,
     ${T_DB調査}.${col_代表局署番号} AS 代表局署番号,
     ${T_DB調査}.${col_代表整理番号} AS 代表整理番号,
@@ -74,6 +87,12 @@ WHERE ${T_KOB240}.${col_KOB240} IS NOT NULL
 	OR ${T_KOB245}.${col_KOB245} IS NOT NULL
 	OR ${T_KOB975}.${col_KOB975} IS NOT NULL";
 
+# [log]
+write-host ""
+Write-Host "-> 【SQL文】"
+write-host ""
+Write-Host "${query}"
+
 #SQL文のセット
 $command = New-Object System.Data.OleDb.OleDbCommand($query, $connection);
 
@@ -87,6 +106,10 @@ $reader = $command.ExecuteReader();
 $table = @();
 $columnNames = $reader.GetSchemaTable() | Select -Expand ColumnName;
 
+# [log]
+write-host ""
+Write-Host "-> 【SQL結果取得成功】"
+
 while ($reader.Read()) {
     $row = New-Object PSObject;
     foreach ($columnName in $columnNames) {
@@ -94,6 +117,12 @@ while ($reader.Read()) {
     }
     $table += $row;
 }
+
+$count = $table.Length;
+
+# [log]
+Write-Host "※ 対象件数 ： ${count}"
+write-host ""
 
 #配列をWindow表示
 #$table | Format-Table -AutoSize;
@@ -107,7 +136,14 @@ $csv.Replace('"^"','^').TrimStart('"').TrimEnd('"') | Out-File $exportPath -Forc
 
 #ACCESSを閉じる
 $connection.Close();
-Write-host "完了";
+
+# [log]
+write-host ""
+Write-host "-> 【完了】";
+write-host ""
 
 #エラー表示に備えて10秒待機
-Start-Sleep 10;
+#Start-Sleep 10;
+
+# [log]
+Stop-Transcript;
