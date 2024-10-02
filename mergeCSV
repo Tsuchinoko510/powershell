@@ -1,0 +1,1128 @@
+#[Ctr]+[M]で開閉して使用
+
+#■ 格納用の標準データ構成
+Class OutputData{
+
+    [string]$CSV名;
+    [string]$テーブル名;
+    [double]$件数;
+    [string]$受付年月日;
+    [string]$申告管轄局署番号;
+    [string]$保存期間延長フラグ;
+    [string]$納付済ステータス;
+    [string]$論理削除フラグ;
+    [string]$添付データ送信紐付フラグ;
+    [string]$添付先業務区分;
+    [string]$不明データ紐付添付データ状態フラグ;
+    [string]$OSS送信種別;
+    [string]$利用者識別番号先頭1文字;
+    [string]$最終更新日;
+    [string]$JOIN先TABLE;
+    [string]$JOIN先最終更新日;
+
+    OutputData(){
+        $this.CSV名 = $null;
+        $this.テーブル名 = $null;
+        $this.件数 = $null;
+        $this.受付年月日 = $null;
+        $this.申告管轄局署番号 = $null;
+        $this.保存期間延長フラグ = $null;
+        $this.納付済ステータス = $null;
+        $this.論理削除フラグ = $null;
+        $this.添付データ送信紐付フラグ = $null;
+        $this.添付先業務区分 = $null;
+        $this.不明データ紐付添付データ状態フラグ = $null;
+        $this.OSS送信種別 = $null;
+        $this.利用者識別番号先頭1文字 = $null;
+        $this.最終更新日 = $null;
+        $this.JOIN先TABLE = $null;
+        $this.JOIN先最終更新日 = $null;
+    }
+
+    setCSV名([string]$inCSV名){$this.CSV名 = $inCSV名;}
+    setテーブル名([string]$inテーブル名){$this.テーブル名 = $inテーブル名;}
+    set件数([string]$in件数){$this.件数 = [int]$in件数;}
+    set受付年月日([string]$in受付年月日){$this.受付年月日 = $in受付年月日;}
+    set申告管轄局署番号([string]$in申告管轄局署番号){$this.申告管轄局署番号 = $in申告管轄局署番号;}
+    set保存期間延長フラグ([string]$in保存期間延長フラグ){$this.保存期間延長フラグ = $in保存期間延長フラグ;}
+    set納付済ステータス([string]$in納付済ステータス){$this.納付済ステータス = $in納付済ステータス;}
+    set論理削除フラグ([string]$in論理削除フラグ){$this.論理削除フラグ = $in論理削除フラグ;}
+    set添付データ送信紐付フラグ([string]$in添付データ送信紐付フラグ){$this.添付データ送信紐付フラグ = $in添付データ送信紐付フラグ;}
+    set添付先業務区分([string]$in添付先業務区分){$this.添付先業務区分 = $in添付先業務区分;}
+    set不明データ紐付添付データ状態フラグ([string]$in不明データ紐付添付データ状態フラグ){$this.不明データ紐付添付データ状態フラグ = $in不明データ紐付添付データ状態フラグ;}
+    setOSS送信種別([string]$inOSS送信種別){$this.OSS送信種別 = $inOSS送信種別;}
+    set利用者識別番号先頭1文字([string]$in利用者識別番号先頭1文字){$this.利用者識別番号先頭1文字 = $in利用者識別番号先頭1文字;}
+    set最終更新日([string]$in最終更新日){$this.最終更新日 = $in最終更新日;}
+    setJOIN先TABLE([string]$inJOIN先TABLE){$this.JOIN先TABLE = $inJOIN先TABLE;}
+    setJOIN先最終更新日([string]$inJOIN先最終更新日){$this.JOIN先最終更新日 = $inJOIN先最終更新日;}
+}
+
+function writeResult($file){
+
+    $fileName = $file.Name;
+    $cnt = (Get-Content -Path $file.fullName)|Measure-Object -Line;
+    $textCnt = $cnt.Lines;
+
+    $listCnt = $null;
+    If($file.name -like "SQL01-*"){$listCnt = $script:SQL01.count;}
+    If($file.name -like "SQL02-*"){$listCnt = $script:SQL02.count;}
+    If($file.name -like "SQL03-*"){$listCnt = $script:SQL03.count;}
+
+    $tabChar = [char]9;
+    Write-Host "${fileName}${tabChar}${textCnt}${tabChar}${listCnt}" 
+}
+
+
+
+#■ SQL01
+#■ SQL01-01_NOUFU
+function getSQL01-01($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "UKE_YMD", "KYOKU", "NOFZ_STS", "HOZN_KKN_EXT_FLG", "RNR_DEL_FLG", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.setCSV名($file.Name);
+
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set保存期間延長フラグ($($_.HOZN_KKN_EXT_FLG));
+        $data.set論理削除フラグ($($_.RNR_DEL_FLG));
+
+        $script:SQL01.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL01-02_KANRI_2_01.sql
+function getSQL01-02($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "TPU_DATA_HMDK_FLG", "TPU_GYM_KBN", "FYU_DATA_GTO_FLG", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.setCSV名($file.Name);
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set添付データ送信紐付フラグ($($_.TPU_DATA_HMDK_FLG));
+        $data.set添付先業務区分($($_.TPU_GYM_KBN));
+        $data.set不明データ紐付添付データ状態フラグ($($_.FYU_DATA_GTO_FLG));
+
+        $script:SQL01.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL01-03_KANRI_V_01.sql
+function getSQL01-03($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "TPU_DATA_HMDK_FLG", "TPU_GYM_KBN", "FYU_DATA_GTO_FLG", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set論理削除フラグ($($_.RNR_DEL_FLG));
+
+        $script:SQL01.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL01-04_KANRIKENS_S_01.sql
+function getSQL01-04($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "TPU_DATA_HMDK_FLG", "TPU_GYM_KBN", "FYU_DATA_GTO_FLG", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+         $data = New-Object OutputData;
+         $data.CSV名 = $file.Name;
+
+         $data.setテーブル名($($_.TABLE));
+         $data.set件数($($_.KENSUU));
+         $data.set受付年月日($($_.UKE_YMD));
+         $data.set申告管轄局署番号($($_.KYOKU));
+         $data.set保存期間延長フラグ($($_.HOZN_KKN_EXT_FLG));
+         $data.setOSS送信種別($($_.OSS_SSN_SHBT));
+
+        $script:SQL01.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL01-05_KANRIKENS_A_01.sql
+function getSQL01-05($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "HOZN_KKN_EXT_FLG", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set保存期間延長フラグ($($_.HOZN_KKN_EXT_FLG));
+
+        $script:SQL01.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL01-06_KANRIKENS_A_01.sql
+function getSQL01-06($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "HOZN_KKN_EXT_FLG", "USRNO_1diget", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set保存期間延長フラグ($($_.HOZN_KKN_EXT_FLG));
+        $data.set利用者識別番号先頭1文字($($_.USRNO_1diget));
+
+        $script:SQL01.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL01-07_KANRIKENS_B_01.sql
+function getSQL01-07($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "HOZN_KKN_EXT_FLG", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set保存期間延長フラグ($($_.HOZN_KKN_EXT_FLG));
+
+        $script:SQL01.add($data) > $null;
+    }
+   writeResult($file)
+}
+#■ SQL01-08_KANRIKENS_B_01.sql
+function getSQL01-08($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "HOZN_KKN_EXT_FLG", "USRNO_1diget", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set保存期間延長フラグ($($_.HOZN_KKN_EXT_FLG));
+        $data.set利用者識別番号先頭1文字($($_.USRNO_1diget));
+
+        $script:SQL01.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL01-09_KANRIKENS_C_01.sql
+function getSQL01-09($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "HOZN_KKN_EXT_FLG", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set保存期間延長フラグ($($_.HOZN_KKN_EXT_FLG));
+
+        $script:SQL01.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL01-10_KANRIKENS_Q_01.sql
+function getSQL01-10($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "HOZN_KKN_EXT_FLG", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set保存期間延長フラグ($($_.HOZN_KKN_EXT_FLG));
+
+        $script:SQL01.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL01-11_KANRIKENS_R_01.sql
+function getSQL01-11($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "HOZN_KKN_EXT_FLG", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set保存期間延長フラグ($($_.HOZN_KKN_EXT_FLG));
+
+        $script:SQL01.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL01-12_KANRIKENS_T.sql
+function getSQL01-12($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "HOZN_KKN_EXT_FLG", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set保存期間延長フラグ($($_.HOZN_KKN_EXT_FLG));
+
+        $script:SQL01.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL01-13_KANRIKENS_U_01.sql
+function getSQL01-13($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "HOZN_KKN_EXT_FLG", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set保存期間延長フラグ($($_.HOZN_KKN_EXT_FLG));
+
+        $script:SQL01.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL01-14_KANRIKENS_W_01.sql
+function getSQL01-14($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "HOZN_KKN_EXT_FLG", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set保存期間延長フラグ($($_.HOZN_KKN_EXT_FLG));
+
+        $script:SQL01.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL01-15_KANRIKENS_Y_01.sql
+function getSQL01-15($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "HOZN_KKN_EXT_FLG", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set保存期間延長フラグ($($_.HOZN_KKN_EXT_FLG));
+
+        $script:SQL01.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL01-16_KANRIKENS_0_01.sql
+function getSQL01-16($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "HOZN_KKN_EXT_FLG", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set保存期間延長フラグ($($_.HOZN_KKN_EXT_FLG));
+
+        $script:SQL01.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL01-17_KANRIKENS_3_01.sql
+function getSQL01-17($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "HOZN_KKN_EXT_FLG", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set保存期間延長フラグ($($_.HOZN_KKN_EXT_FLG));
+
+        $script:SQL01.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL01-18_KANRIKENS_4_01.sql
+function getSQL01-18($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "HOZN_KKN_EXT_FLG", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set保存期間延長フラグ($($_.HOZN_KKN_EXT_FLG));
+
+        $script:SQL01.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL01-19_KANRIKENS_5_01.sql
+function getSQL01-19($file){
+    
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "HOZN_KKN_EXT_FLG", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set保存期間延長フラグ($($_.HOZN_KKN_EXT_FLG));
+
+        $script:SQL01.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL01-21_KANRIKENS_A_01_SBU-JKYK.sql
+function getSQL01-21($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "UKE_YMD", "KYOKU", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名("SHINKOKU.KANRIKENS_A_01");
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+
+        $script:SQL01.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL01-22_KANRIKENS_C_01_SBU-JKYK.sql
+function getSQL01-22($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "UKE_YMD", "KYOKU", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名("SHINKOKU.KANRIKENS_C_01");
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+
+        $script:SQL01.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL01-23_KANRIKENS_Y_01_SBU-JKYK.sql
+function getSQL01-23($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "UKE_YMD", "KYOKU", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名("SHINKOKU.KANRIKENS_Y_01");
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+
+        $script:SQL01.add($data) > $null;
+    }
+    writeResult($file)
+}
+
+#■ SQL2
+#■ SQL02-05_KANRIKENS_A_01.sql
+function getSQL02-05($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "UKE_YMD", "KYOKU", "HOZN_KKN_EXT_FLG", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名("SHINKOKU.KANRIKENS_A_01");
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set保存期間延長フラグ($($_.HOZN_KKN_EXT_FLG));
+
+        $script:SQL02.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL02-06_KANRIKENS_A_01.sql
+function getSQL02-06($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "UKE_YMD", "KYOKU", "HOZN_KKN_EXT_FLG", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名("SHINKOKU.KANRIKENS_A_01");
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set保存期間延長フラグ($($_.HOZN_KKN_EXT_FLG));
+
+        $script:SQL02.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL02-07_KANRIKENS_B_01.sql
+function getSQL02-07($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "UKE_YMD", "KYOKU", "HOZN_KKN_EXT_FLG", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名("SHINKOKU.KANRIKENS_B_01");
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set保存期間延長フラグ($($_.HOZN_KKN_EXT_FLG));
+
+        $script:SQL02.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL02-08_KANRIKENS_B_01.sql
+function getSQL02-08($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "UKE_YMD", "KYOKU", "HOZN_KKN_EXT_FLG", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名("SHINKOKU.KANRIKENS_B_01");
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set保存期間延長フラグ($($_.HOZN_KKN_EXT_FLG));
+
+        $script:SQL02.add($data) > $null;
+    }
+   writeResult($file)
+}
+
+#■ SQL3
+#■ SQL03-01_NOUFU_01.sql
+function getSQL03-01($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "K_LSTUPDT", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set最終更新日($($_.K_LSTUPDT));
+
+        $script:SQL03.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL03-02_KANRI_2.sql
+function getSQL03-02($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "K_LSTUPDT", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set最終更新日($($_.K_LSTUPDT));
+
+        $script:SQL03.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL03-03_KANRI_V.sql
+function getSQL03-03($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "K_LSTUPDT", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set最終更新日($($_.K_LSTUPDT));
+
+        $script:SQL03.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL03-04_KANRIKENS_S_01.sql (INNER JOIN SHINKOKU.KANRI_S_01)
+function getSQL03-04($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "KK_LSTUPDT" ,"K_LSTUPDT", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set最終更新日($($_.K_LSTUPDT));
+        $data.setJOIN先最終更新日($($_.KK_LSTUPDT));
+        $data.setJOIN先TABLE("INNER JOIN SHINKOKU.KANRI_S_01");
+        $script:SQL03.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL03-05_KANRIKENS_A_01.sql (INNER JOIN SHINKOKU.KANRI_A_01)
+function getSQL03-05($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "KK_LSTUPDT" ,"K_LSTUPDT", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set最終更新日($($_.K_LSTUPDT));
+        $data.setJOIN先TABLE("INNER JOIN SHINKOKU.KANRI_A_01");
+        $data.setJOIN先最終更新日($($_.KK_LSTUPDT));
+
+        $script:SQL03.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL03-06_KANRIKENS_A_01.sql (INNER JOIN SHINKOKU.KANRI_A_01)
+function getSQL03-06($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "KK_LSTUPDT" ,"K_LSTUPDT", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set最終更新日($($_.K_LSTUPDT));
+        $data.setJOIN先TABLE("INNER JOIN SHINKOKU.KANRI_A_01");
+        $data.setJOIN先最終更新日($($_.KK_LSTUPDT));
+
+        $script:SQL03.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL03-07_KANRIKENS_B_01.sql (INNER JOIN SHINKOKU.KANRI_B_01)
+function getSQL03-07($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "KK_LSTUPDT" ,"K_LSTUPDT", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set最終更新日($($_.K_LSTUPDT));
+        $data.setJOIN先TABLE("INNER JOIN SHINKOKU.KANRI_B_01");
+        $data.setJOIN先最終更新日($($_.KK_LSTUPDT));
+
+        $script:SQL03.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL03-08_KANRIKENS_B_01.sql (INNER JOIN SHINKOKU.KANRI_B_01)
+function getSQL03-08($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "KK_LSTUPDT" ,"K_LSTUPDT", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set最終更新日($($_.K_LSTUPDT));
+        $data.setJOIN先TABLE("INNER JOIN SHINKOKU.KANRI_B_01");
+        $data.setJOIN先最終更新日($($_.KK_LSTUPDT));
+
+        $script:SQL03.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL03-09_KANRIKENS_C_01.sql (INNER JOIN SHINKOKU.KANRI_C_01)
+function getSQL03-09($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "KK_LSTUPDT" ,"K_LSTUPDT", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set最終更新日($($_.K_LSTUPDT));
+        $data.setJOIN先TABLE("INNER JOIN SHINKOKU.KANRI_C_01");
+        $data.setJOIN先最終更新日($($_.KK_LSTUPDT));
+
+        $script:SQL03.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL03-10_KANRIKENS_Q_01.sql (INNER JOIN SHINKOKU.KANRI_Q_01)
+function getSQL03-10($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "KK_LSTUPDT" ,"K_LSTUPDT", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set最終更新日($($_.K_LSTUPDT));
+        $data.setJOIN先TABLE("INNER JOIN SHINKOKU.KANRI_Q_01");
+        $data.setJOIN先最終更新日($($_.KK_LSTUPDT));
+
+        $script:SQL03.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL03-11_KANRIKENS_R_01.sql (INNER JOIN SHINKOKU.KANRI_R_01)
+function getSQL03-11($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "KK_LSTUPDT" ,"K_LSTUPDT", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set最終更新日($($_.K_LSTUPDT));
+        $data.setJOIN先TABLE("INNER JOIN SHINKOKU.KANRI_R_01");
+        $data.setJOIN先最終更新日($($_.KK_LSTUPDT));
+
+        $script:SQL03.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL03-12_KANRIKENS_T.sql (INNER JOIN SHINKOKU.KANRI_T)
+function getSQL03-12($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "KK_LSTUPDT" ,"K_LSTUPDT", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set最終更新日($($_.K_LSTUPDT));
+        $data.setJOIN先TABLE("INNER JOIN SHINKOKU.KANRI_T");
+        $data.setJOIN先最終更新日($($_.KK_LSTUPDT));
+
+        $script:SQL03.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL03-13_KANRIKENS_U_01 .sql (INNER JOIN SHINKOKU.KANRI_U_01)
+function getSQL03-13($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "KK_LSTUPDT" ,"K_LSTUPDT", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set最終更新日($($_.K_LSTUPDT));
+        $data.setJOIN先TABLE("INNER JOIN SHINKOKU.KANRI_U_01");
+        $data.setJOIN先最終更新日($($_.KK_LSTUPDT));
+
+        $script:SQL03.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL03-14_KANRIKENS_W_01.sql (INNER JOIN SHINKOKU.KANRI_W_01)
+function getSQL03-14($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "KK_LSTUPDT" ,"K_LSTUPDT", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set最終更新日($($_.K_LSTUPDT));
+        $data.setJOIN先TABLE("INNER JOIN SHINKOKU.KANRI_W_01");
+        $data.setJOIN先最終更新日($($_.KK_LSTUPDT));
+
+        $script:SQL03.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL03-15_KANRIKENS_Y_01.sql (INNER JOIN SHINKOKU.KANRI_Y_01)
+function getSQL03-15($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "KK_LSTUPDT" ,"K_LSTUPDT", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set最終更新日($($_.K_LSTUPDT));
+        $data.setJOIN先TABLE("INNER JOIN SHINKOKU.KANRI_Y_01");
+        $data.setJOIN先最終更新日($($_.KK_LSTUPDT));
+
+        $script:SQL03.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL03-16_KANRIKENS_0_01.sql (IINNER JOIN SHINKOKU.KANRI_0_01)
+function getSQL03-16($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "KK_LSTUPDT" ,"K_LSTUPDT", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set最終更新日($($_.K_LSTUPDT));
+        $data.setJOIN先TABLE("INNER JOIN SHINKOKU.KANRI_0_01");
+        $data.setJOIN先最終更新日($($_.KK_LSTUPDT));
+
+        $script:SQL03.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL03-17_KANRIKENS_3.sql (INNER JOIN SHINKOKU.KANRI_3)
+function getSQL03-17($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "KK_LSTUPDT" ,"K_LSTUPDT", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set最終更新日($($_.K_LSTUPDT));
+        $data.setJOIN先TABLE("INNER JOIN SHINKOKU.KANRI_3");
+        $data.setJOIN先最終更新日($($_.KK_LSTUPDT));
+
+        $script:SQL03.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL03-18_KANRIKENS_4.sql (INNER JOIN SHINKOKU.KANRI_4)
+function getSQL03-18($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "KK_LSTUPDT" ,"K_LSTUPDT", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set最終更新日($($_.K_LSTUPDT));
+        $data.setJOIN先TABLE("INNER JOIN SHINKOKU.KANRI_4");
+        $data.setJOIN先最終更新日($($_.KK_LSTUPDT));
+
+        $script:SQL03.add($data) > $null;
+    }
+    writeResult($file)
+}
+#■ SQL03-19_KANRIKENS_5_01.sql (INNER JOIN SHINKOKU.KANRI_5_01)
+function getSQL03-19($file){
+
+    $CSV = Import-Csv $file.fullName -Delimiter ','  -header "TABLE", "UKE_YMD", "KYOKU", "KK_LSTUPDT" ,"K_LSTUPDT", "KENSUU" -Encoding UTF8;
+
+    $CSV|ForEach-Object{
+
+        $data = New-Object OutputData;
+        $data.CSV名 = $file.Name;
+
+        $data.setテーブル名($($_.TABLE));
+        $data.set件数($($_.KENSUU));
+        $data.set受付年月日($($_.UKE_YMD));
+        $data.set申告管轄局署番号($($_.KYOKU));
+        $data.set最終更新日($($_.K_LSTUPDT));
+        $data.setJOIN先TABLE("INNER JOIN SHINKOKU.KANRI_5_01");
+        $data.setJOIN先最終更新日($($_.KK_LSTUPDT));
+
+        $script:SQL03.add($data) > $null;
+    }
+    writeResult($file)
+}
+
+#■ mergeSQL01
+function mergeSQL01(){
+
+    # [log]
+    $logFileName = "【CsvMerge】SQL01.log";
+    Start-Transcript ((Convert-Path .\), $logFileName -join '\');
+    Write-Host "";
+    Write-Host "";
+
+    $script:SQL01 = New-Object System.Collections.ArrayList;
+
+    Foreach($file in (Get-ChildItem -Filter *.CSV)){
+        If($file.name -like "SQL01-01_*"){getSQL01-01($file);}
+        If($file.name -like "SQL01-02_*"){getSQL01-02($file);}
+        If($file.name -like "SQL01-03_*"){getSQL01-03($file);}
+        If($file.name -like "SQL01-04_*"){getSQL01-04($file);}
+        If($file.name -like "SQL01-05_*"){getSQL01-05($file);}
+        If($file.name -like "SQL01-06_*"){getSQL01-06($file);}
+        If($file.name -like "SQL01-07_*"){getSQL01-07($file);}
+        If($file.name -like "SQL01-08_*"){getSQL01-08($file);}
+        If($file.name -like "SQL01-09_*"){getSQL01-09($file);}
+        If($file.name -like "SQL01-10_*"){getSQL01-10($file);}
+        If($file.name -like "SQL01-11_*"){getSQL01-11($file);}
+        If($file.name -like "SQL01-12_*"){getSQL01-12($file);}
+        If($file.name -like "SQL01-13_*"){getSQL01-13($file);}
+        If($file.name -like "SQL01-14_*"){getSQL01-14($file);}
+        If($file.name -like "SQL01-15_*"){getSQL01-15($file);}
+        If($file.name -like "SQL01-16_*"){getSQL01-16($file);}
+        If($file.name -like "SQL01-17_*"){getSQL01-17($file);}
+        If($file.name -like "SQL01-18_*"){getSQL01-18($file);}
+        If($file.name -like "SQL01-19_*"){getSQL01-19($file);}
+        If($file.name -like "SQL01-21_*"){getSQL01-21($file);}
+        If($file.name -like "SQL01-22_*"){getSQL01-22($file);}
+        If($file.name -like "SQL01-23_*"){getSQL01-23($file);}
+    }
+    $tab = [char]9;
+    $script:SQL01|Export-Csv ((Convert-Path .\), "\【CsvMerge】SQL01.csv" -join '\') -Encoding UTF8 -Delimiter "${tab}";
+
+    # [log]
+    Write-Host "";
+    Write-Host "";
+    Stop-Transcript;
+}
+#■ mergeSQL02
+function mergeSQL02(){
+
+    # [log]
+    $logFileName = "【CsvMerge】SQL02.log";
+    Start-Transcript ((Convert-Path .\), $logFileName -join '\');
+    Write-Host "";
+    Write-Host "";
+
+    $script:SQL02 = New-Object System.Collections.ArrayList;
+
+    Foreach($file in (Get-ChildItem -Filter *.CSV)){
+        If($file.name -like "SQL02-05_*"){getSQL02-05($file);}
+        If($file.name -like "SQL02-06_*"){getSQL02-06($file);}
+        If($file.name -like "SQL02-07_*"){getSQL02-07($file);}
+        If($file.name -like "SQL02-08_*"){getSQL02-08($file);}
+    }
+    $tab = [char]9;
+    $script:SQL02|Export-Csv ((Convert-Path .\), "\【CsvMerge】SQL02.csv" -join '\') -Encoding UTF8 -Delimiter "${tab}";
+
+    # [log]
+    Write-Host "";
+    Write-Host "";
+    Stop-Transcript;
+}
+#■ mergeSQL03
+function mergeSQL03(){
+
+    # [log]
+    $logFileName = "【CsvMerge】SQL03.log";
+    Start-Transcript ((Convert-Path .\), $logFileName -join '\');
+    Write-Host "";
+    Write-Host "";
+
+    $script:SQL03 = New-Object System.Collections.ArrayList;
+
+    Foreach($file in (Get-ChildItem -Filter *.CSV)){
+        If($file.name -like "SQL03-01_*"){getSQL03-01($file);}
+        If($file.name -like "SQL03-02_*"){getSQL03-02($file);}
+        If($file.name -like "SQL03-03_*"){getSQL03-03($file);}
+        If($file.name -like "SQL03-04_*"){getSQL03-04($file);}
+        If($file.name -like "SQL03-05_*"){getSQL03-05($file);}
+        If($file.name -like "SQL03-06_*"){getSQL03-06($file);}
+        If($file.name -like "SQL03-07_*"){getSQL03-07($file);}
+        If($file.name -like "SQL03-08_*"){getSQL03-08($file);}
+        If($file.name -like "SQL03-09_*"){getSQL03-09($file);}
+        If($file.name -like "SQL03-10_*"){getSQL03-10($file);}
+        If($file.name -like "SQL03-11_*"){getSQL03-11($file);}
+        If($file.name -like "SQL03-12_*"){getSQL03-12($file);}
+        If($file.name -like "SQL03-13_*"){getSQL03-13($file);}
+        If($file.name -like "SQL03-14_*"){getSQL03-14($file);}
+        If($file.name -like "SQL03-15_*"){getSQL03-15($file);}
+        If($file.name -like "SQL03-16_*"){getSQL03-16($file);}
+        If($file.name -like "SQL03-17_*"){getSQL03-17($file);}
+        If($file.name -like "SQL03-18_*"){getSQL03-18($file);}
+        If($file.name -like "SQL03-19_*"){getSQL03-19($file);}
+    }
+    $tab = [char]9;
+    $script:SQL03|Export-Csv ((Convert-Path .\), "\【CsvMerge】SQL03.csv" -join '\') -Encoding UTF8 -Delimiter "${tab}";
+
+    # [log]
+    Write-Host "";
+    Write-Host "";
+    Stop-Transcript;
+}
+
+#■ 処理部分
+mergeSQL01;
+mergeSQL02;
+mergeSQL03;
