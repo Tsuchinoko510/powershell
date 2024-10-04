@@ -1,0 +1,26 @@
+#ファイル名：_Cnt.ps1
+
+$logFileName = "_Cnt.ps1.log";
+Start-Transcript ((Convert-Path .\), $logFileName -join '\');
+Write-Host "";
+Write-Host "";
+
+$files = Get-ChildItem -Filter *.CSV;
+$tab = [char]9;
+
+foreach($file in $files){
+    $cnt = (Get-Content -Path $file.fullName)|Measure-Object -Line;
+    $textCnt = $cnt.Lines;
+    $fileName = $file.Name
+    $fileNameSplit = $fileName.split("_");
+    $YSK_ID = $fileNameSplit[1];
+    $TZKI_ID = $fileNameSplit[2];
+    $TZKIVer = $fileNameSplit[3];
+    $KSBNG = $fileNameSplit[4] -replace ".csv", "";
+
+    Write-Host ("${fileName}${tab}${KSBNG}${tab}${YSK_ID}${tab}${TZKI_ID}${tab}${TZKIVer}${tab}${textCnt}")
+}
+
+Write-Host "";
+Write-Host "";
+Stop-Transcript;
