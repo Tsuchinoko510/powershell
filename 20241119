@@ -1,0 +1,236 @@
+class FileInfo{
+    
+    [string]$ファイル名;
+    [string]$実施日;
+    [string]$開始時間;
+
+    [string]$局署番号_自;
+    [string]$局署番号_至;
+    [string]$受付番号_自;
+    [string]$受付番号_至;
+
+    [string]$管理検索テーブル読み込み数;
+    [string]$文書管理対象の数;
+    [string]$マスタと紐づけできた数;
+    [string]$対象外でない件数;
+    [string]$対象外の件数;
+    [string]$ダミー簿冊出力対象の件数;
+    [string]$ダミー簿冊出力対象ではないの件数;
+    [string]$マスタに紐づかなかった件数;
+    [string]$文書管理対象外の数;
+    [string]$移行用管理テーブル出力数;
+    [string]$移行用簿冊情報出力数;
+    [string]$移行用文書管理簿情報出力数;
+    [string]$正常な簿冊の件数;
+    [string]$ダミー簿冊エラーの件数;
+    [string]$ダミー簿冊対象外の件数;
+    [string]$エラーファイル出力件数;
+    [string]$対象外でエラーファイルに出力した件数;
+    [string]$マスタに紐づかずエラーファイルに出力した件数;
+
+    [string]$strログ開始時間;
+    [string]$strログ終了時間;
+
+    [DateTime]$ログ開始時間;
+    [DateTime]$ログ終了時間;
+    $実行時間_分;
+    $実行時間_秒;
+    $実行時間_ミリ秒;
+
+}
+
+$path = (Get-Location),"OUTPUT", "件数リスト" -join "\";
+[array]$dataList = @();
+$list = Get-ChildItem $path;
+
+foreach($file in $list){
+    $i = 1;
+    $fileInfo = New-Object FileInfo;
+    $fileInfo.ファイル名 = $file.Name;
+    $texts = ([string]$file.Name).split("_");
+    $fileInfo.実施日 = $texts[5];
+    $fileInfo.開始時間 = $texts[6];
+
+    foreach($text in Get-Content $file.fullName){
+        if($text -match "【局署番号（自）（至）】"){
+            $text = $text -replace "【局署番号（自）（至）】", "";
+            $texts = ([string]$text).Split("-");
+            $fileInfo.局署番号_自 = $texts[0].Trim();
+            $fileInfo.局署番号_至 = $texts[1].Trim();
+        }
+
+        if($text -match "【受付番号（自）（至）】"){
+            $text = $text -replace "【受付番号（自）（至）】", "";
+            $texts = ([string]$text).Split("-");
+            $fileInfo.受付番号_自 = $texts[0].Trim();
+            $fileInfo.受付番号_至 = $texts[1].Trim();
+        }
+
+        if($text -match "管理検索テーブル読み込み数"){
+            $text = $text -replace "管理検索テーブル読み込み数", "";
+            $text = $text -replace "内", "";
+            $text = $text -replace "－", "";
+            $text = $text.Trim();
+            $fileInfo.管理検索テーブル読み込み数 = $text;
+        }
+
+        if($text -match "文書管理対象の数"){
+            $text = $text -replace "文書管理対象の数", "";
+            $text = $text -replace "内", "";
+            $text = $text -replace "－", "";
+            $text = $text.Trim();
+            $fileInfo.文書管理対象の数 = $text;
+        }
+
+        if($text -match "マスタと紐づけできた数"){
+            $text = $text -replace "マスタと紐づけできた数", "";
+            $text = $text -replace "内", "";
+            $text = $text -replace "－", "";
+            $text = $text.Trim();
+            $fileInfo.マスタと紐づけできた数 = $text;
+        }
+
+        if($text -match "対象外でない件数"){
+            $text = $text -replace "対象外でない件数", "";
+            $text = $text -replace "内", "";
+            $text = $text -replace "－", "";
+            $text = $text.Trim();
+            $fileInfo.対象外でない件数 = $text;
+        }
+
+        if($text -match "対象外の件数"){
+            $text = $text -replace "対象外の件数", "";
+            $text = $text -replace "内", "";
+            $text = $text -replace "－", "";
+            $text = $text.Trim();
+            $fileInfo.対象外の件数 = $text;
+        }
+
+        if($text -match "ダミー簿冊出力対象の件数"){
+            $text = $text -replace "ダミー簿冊出力対象の件数", "";
+            $text = $text -replace "内", "";
+            $text = $text -replace "－", "";
+            $text = $text.Trim();
+            $fileInfo.ダミー簿冊出力対象の件数 = $text;
+        }
+
+        if($text -match "ダミー簿冊出力対象ではないの件数"){
+            $text = $text -replace "ダミー簿冊出力対象ではないの件数", "";
+            $text = $text -replace "内", "";
+            $text = $text -replace "－", "";
+            $text = $text.Trim();
+            $fileInfo.ダミー簿冊出力対象ではないの件数 = $text;
+        }
+
+        if($text -match "マスタに紐づかなかった件数"){
+            $text = $text -replace "マスタに紐づかなかった件数", "";
+            $text = $text -replace "内", "";
+            $text = $text -replace "－", "";
+            $text = $text.Trim();
+            $fileInfo.マスタに紐づかなかった件数 = $text;
+        }
+
+        if($text -match "文書管理対象外の数"){
+            $text = $text -replace "文書管理対象外の数", "";
+            $text = $text -replace "内", "";
+            $text = $text -replace "－", "";
+            $text = $text.Trim();
+            $fileInfo.文書管理対象外の数 = $text;
+        }
+
+        if($text -match "移行用管理テーブル出力数"){
+            $text = $text -replace "移行用管理テーブル出力数", "";
+            $text = $text -replace "内", "";
+            $text = $text -replace "－", "";
+            $text = $text.Trim();
+            $fileInfo.移行用管理テーブル出力数 = $text;
+        }
+
+        if($text -match "移行用簿冊情報出力数"){
+            $text = $text -replace "移行用簿冊情報出力数", "";
+            $text = $text -replace "内", "";
+            $text = $text -replace "－", "";
+            $text = $text.Trim();
+            $fileInfo.移行用簿冊情報出力数 = $text;
+        }
+
+        if($text -match "移行用文書管理簿情報出力数"){
+            $text = $text -replace "移行用文書管理簿情報出力数", "";
+            $text = $text -replace "内", "";
+            $text = $text -replace "－", "";
+            $text = $text.Trim();
+            $fileInfo.移行用文書管理簿情報出力数 = $text;
+        }
+
+        if($text -match "正常な簿冊の件数"){
+            $text = $text -replace "正常な簿冊の件数", "";
+            $text = $text -replace "内", "";
+            $text = $text -replace "－", "";
+            $text = $text.Trim();
+            $fileInfo.正常な簿冊の件数 = $text;
+        }
+
+        if($text -match "ダミー簿冊（エラー）の件数"){
+            $text = $text -replace "ダミー簿冊（エラー）の件数", "";
+            $text = $text -replace "内", "";
+            $text = $text -replace "－", "";
+            $text = $text.Trim();
+            $fileInfo.ダミー簿冊エラーの件数 = $text;
+        }
+
+        if($text -match "ダミー簿冊（対象外）の件数"){
+            $text = $text -replace "ダミー簿冊（対象外）の件数", "";
+            $text = $text -replace "内", "";
+            $text = $text -replace "－", "";
+            $text = $text.Trim();
+            $fileInfo.ダミー簿冊対象外の件数 = $text;
+        }
+
+        if($text -match "エラーファイル出力件数"){
+            $text = $text -replace "エラーファイル出力件数", "";
+            $text = $text -replace "内", "";
+            $text = $text -replace "－", "";
+            $text = $text.Trim();
+            $fileInfo.エラーファイル出力件数 = $text;
+        }
+
+        if($text -match "対象外でエラーファイルに出力した件数"){
+            $text = $text -replace "対象外でエラーファイルに出力した件数", "";
+            $text = $text -replace "内", "";
+            $text = $text -replace "－", "";
+            $text = $text.Trim();
+            $fileInfo.対象外でエラーファイルに出力した件数 = $text;
+        }
+
+        if($text -match "マスタに紐づかずエラーファイルに出力した件数"){
+            $text = $text -replace "マスタに紐づかずエラーファイルに出力した件数", "";
+            $text = $text -replace "内", "";
+            $text = $text -replace "－", "";
+            $text = $text.Trim();
+            $fileInfo.マスタに紐づかずエラーファイルに出力した件数 = $text;
+        }
+
+    }
+    $dataList += $fileInfo;
+}
+
+
+
+$logData = Import-Csv ((Get-Location), "DB_稼働ログ_手マスク要.csv" -join "\") -Encoding UTF8;
+
+foreach($data in $dataList){
+    $logData|ForEach-Object{
+        if(($_.GYM_STRT_D -eq $data.実施日) -and ($_.GYM_STRT_TIME -eq $data.開始時間)){
+            $data.strログ開始時間 = $_.GYM_STRT_TIME;
+            $data.strログ終了時間 = $_.GYM_FIN_TIME;
+            $data.ログ開始時間 = [DateTime]::ParseExact(($_.GYM_STRT_D, $_.GYM_STRT_TIME -join ""), "yyyyMMddHHmmssfff", $null);
+            $data.ログ終了時間 = [DateTime]::ParseExact(($_.GYM_FIN_D, $_.GYM_FIN_TIME -join ""), "yyyyMMddHHmmssfff", $null);
+            $ts = New-TimeSpan $data.ログ開始時間 $data.ログ終了時間;
+            $data.実行時間_分 = $ts.TotalMinutes;
+            $data.実行時間_秒 = $ts.TotalSeconds;
+            $data.実行時間_ミリ秒 = $ts.TotalMilliseconds;
+        }
+    }
+}
+
+$dataList|Export-Csv ((Convert-Path .\), "１日実行結果.csv" -join "\") -Encoding UTF8; 
